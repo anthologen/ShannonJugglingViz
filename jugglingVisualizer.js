@@ -2,16 +2,22 @@
 const BAR_LENGTH = 1000;
 const BAR_HEIGHT = 30;
 const BAR_VERTICAL_SPACE = 10;
-const BAR_LEFT_OFFSET = 50;
+const BAR_LEFT_OFFSET = 100;
 const GROUP_VERTICAL_SPACE = 20;
 const OUTLINE_COLOR = "black";
+
+const TITLE_Y_SPACE = 30;
+const CHART_RIGHT_PAD = 10;
+
+const TITLE_FONT_SIZE = 24;
+const BAR_FONT_SIZE = 18;
 
 var drawChart = function(chart)
 {
   const groups = chart.groupList;
 
   // Calculate the svg size needed
-  var svgHeight = 0;
+  var svgHeight = TITLE_Y_SPACE;
 
   // Space used by each group
   for (let i = 0; i < groups.length; i++)
@@ -22,7 +28,7 @@ var drawChart = function(chart)
   // Spacing between the groups
   svgHeight += groups.length * GROUP_VERTICAL_SPACE;
 
-  var svgWidth = BAR_LEFT_OFFSET + BAR_LENGTH;
+  var svgWidth = BAR_LEFT_OFFSET + BAR_LENGTH + CHART_RIGHT_PAD;
 
   // Add the svg to draw on
   var svg = d3.select("body").append("svg")
@@ -31,8 +37,16 @@ var drawChart = function(chart)
     .attr("width", svgWidth)
     .attr("height", svgHeight);
 
+  // Add title
+  var title = d3.select("#canvas").append("text")
+    .attr("x", "0%")
+    .attr("y", TITLE_FONT_SIZE)
+    .attr("alignment-baseline", "central")
+    .attr("font-size", TITLE_FONT_SIZE)
+    .text(chart.name);
+
   // Keep track of chart Y space already drawn on
-  var chartYSpaceConsumed = 0;
+  var chartYSpaceConsumed = TITLE_Y_SPACE;
   // Draw groups
   for (let i = 0; i < groups.length; i++)
   {
@@ -81,6 +95,12 @@ var drawBar = function(yOffsetInGroup, groupIdx, barIdx, bar)
     .attr("height", BAR_HEIGHT)
     .attr("fill", "none")
     .attr("stroke", OUTLINE_COLOR);
+
+  var barLabel = d3.select("#"+barId).append("text")
+    .attr("x", 0)
+    .attr("y", yOffsetInGroup + (BAR_HEIGHT / 2) + (BAR_FONT_SIZE / 2))
+    .attr("font-size", BAR_FONT_SIZE)
+    .text(bar.name);
 
   // No validations done on events - they may overlap
   const events = bar.eventList;
