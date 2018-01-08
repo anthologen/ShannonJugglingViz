@@ -19,10 +19,8 @@ var drawChart = function(chart)
     let numBars = groups[i].barList.length;
     svgHeight += numBars * (BAR_HEIGHT + BAR_VERTICAL_SPACE);
   }
-
   // Spacing between the groups
-  const numGroups = groups.length;
-  svgHeight += numGroups * GROUP_VERTICAL_SPACE;
+  svgHeight += groups.length * GROUP_VERTICAL_SPACE;
 
   var svgWidth = BAR_LEFT_OFFSET + BAR_LENGTH;
 
@@ -112,54 +110,85 @@ var drawEvent = function(yOffsetInGroup, groupIdx, barIdx, eventIdx, eventObj)
     .attr("stroke", OUTLINE_COLOR);
 }
 
-// TODO: Write a data format checker
-var makeSampleCascadeGroupData = function()
+function EventObj(startTime, duration, color)
 {
-  var chart = {};
-  chart.name = "Test";
-  chart.groupList = [
-    {
-      "name": "TestGroup",
-      "barList": [
-        {
-          "name": "Bar 1",
-          "eventList": [
-            {
-              "startTime": 0,
-              "duration": 100,
-              "color": "red"
-            }
-          ]
-        },
-        {
-          "name": "Bar 2",
-          "eventList": [
-            {
-              "startTime": 100,
-              "duration": 200,
-              "color": "blue"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "TestGroup2",
-      "barList": [
-        {
-          "name": "Bar 3",
-          "eventList": [
-            {
-              "startTime": 50,
-              "duration": 150,
-              "color": "green"
-            }
-          ]
-        }
-      ]
-    }
-  ];
-  return chart;
+  this.startTime = startTime;
+  this.duration = duration;
+  this.color = color;
 }
 
-drawChart(makeSampleCascadeGroupData());
+function Bar(name)
+{
+  this.name = name;
+  this.eventList = [];
+
+  this.addEvent = function(eventObj)
+  {
+    if (eventObj instanceof EventObj)
+    {
+      this.eventList.push(eventObj);
+      return true;
+    }
+    console.log("Invalid event: %o", eventObj);
+    return false;
+  }
+}
+
+function Group(name)
+{
+  this.name = name;
+  this.barList = [];
+
+  this.addBar = function(bar)
+  {
+    if (bar instanceof Bar)
+    {
+      this.barList.push(bar)
+      return true;
+    }
+    console.log("Invalid bar: %o", bar);
+    return false;
+  }
+}
+
+function Chart(name)
+{
+  this.name = name;
+  this.groupList = [];
+
+  this.addGroup = function(group)
+  {
+    if (group instanceof Group)
+    {
+      this.groupList.push(group);
+      return true;
+    }
+    console.log("Invalid group: %o", group);
+    return false;
+  }
+}
+
+var chart = new Chart("TestChart");
+
+var group1 = new Group("TestGroup1");
+
+var bar1 = new Bar("Bar1");
+bar1.addEvent(new EventObj(0, 100, "red"));
+group1.addBar(bar1);
+
+var bar2 = new Bar("Bar2")
+bar2.addEvent(new EventObj(100, 200, "blue"));
+group1.addBar(bar2);
+
+chart.addGroup(group1);
+
+var group2 = new Group("TestGroup2");
+
+var bar3 =  new Bar("Bar3");
+bar3.addEvent(new EventObj(50, 150, "green"));
+group2.addBar(bar3);
+
+chart.addGroup(group2);
+
+
+drawChart(chart);
