@@ -210,5 +210,92 @@ group2.addBar(bar3);
 
 chart.addGroup(group2);
 
+//drawChart(chart);
 
-drawChart(chart);
+const BALL_COLOURS = [
+  "red",
+  "lime",
+  "deepskyblue",
+  "darkorange",
+  "gold",
+  "blueviolet",
+  "magenta",
+  "tan",
+  "navy"
+];
+
+var correctEventWrapping = function(eventList, patternMaxTime)
+{
+  let correctedEventList = [];
+  for (let i = 0; i < eventList.length; i++)
+  {
+    let eventObj = eventList[i];
+
+    if (eventObj.startTime + eventObj.duration > patternMaxTime)
+    {
+      // Break the event into two (wrapping around to the start)
+      let overshoot = (eventObj.startTime + eventObj.duration) - patternMaxTime;
+
+      correctedEventList.push(new EventObj(eventObj.startTime,
+                                           eventObj.duration - overshoot,
+                                           eventObj.color));
+      correctedEventList.push(new EventObj(0, overshoot, eventObj.color));
+    }
+    else
+    {
+      correctedEventList.push(eventObj);
+    }
+  }
+  return correctedEventList;
+};
+
+var genShannonChart = function(flight, dwell, vacant, balls, hands)
+{
+  var patternMaxTime = (dwell + flight) * hands;
+  var scalingFactor = BAR_LENGTH / patternMaxTime;
+  console.log("1 time unit = " + scalingFactor + "px");
+
+  var patternChart = new Chart("Shannon's Juggling Theorem");
+
+  var ballGroup = new Group("Balls");
+  for (let b = 0; b < balls; b++)
+  {
+    let ballBar = new Bar("Ball " + b);
+
+    let ballOffset = b * (dwell + vacant);
+    let ballEvents = [];
+    for (let h = 0; h < hands; h++)
+    {
+      let startTime = (ballOffset + (h * (flight + dwell))) % patternMaxTime;
+      ballEvents.push(new EventObj(startTime * scalingFactor,
+                                   dwell * scalingFactor,
+                                   BALL_COLOURS[b]));
+    }
+    ballBar.eventList = correctEventWrapping(ballEvents, patternMaxTime * scalingFactor);
+    ballGroup.addBar(ballBar);
+  }
+  patternChart.addGroup(ballGroup);
+
+  var handGroup = new Group("Hands");
+  for (let h = 0; h < hands; h++)
+  {
+    let handBar = new Bar("Hand " + h);
+
+    let handOffset = h * (dwell + flight);
+    let handEvents = [];
+    for (let b = 0; b < balls; b++)
+    {
+      let startTime = (handOffset + (b * (vacant + dwell))) % patternMaxTime;
+      handEvents.push(new EventObj(startTime * scalingFactor,
+                                   dwell * scalingFactor,
+                                   BALL_COLOURS[b]));
+    }
+    handBar.eventList = correctEventWrapping(handEvents, patternMaxTime * scalingFactor);
+    handGroup.addBar(handBar);
+  }
+  patternChart.addGroup(handGroup);
+
+  return patternChart;
+}
+
+drawChart(genShannonChart(385, 305, 155, 3, 2));
