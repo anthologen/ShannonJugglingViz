@@ -45,16 +45,20 @@ var drawChart = function(chart)
     .attr("font-size", TITLE_FONT_SIZE)
     .text(chart.name);
 
+  var scalingFactor = BAR_LENGTH / chart.maxTime;
+  console.log("1 time unit = " + scalingFactor + "px");
+
   // Keep track of chart Y space already drawn on
   var chartYSpaceConsumed = TITLE_Y_SPACE;
   // Draw groups
   for (let i = 0; i < groups.length; i++)
   {
-    chartYSpaceConsumed += drawGroup(chartYSpaceConsumed, i, groups[i]);
+    chartYSpaceConsumed += drawGroup(i, groups[i],
+                                     chartYSpaceConsumed, scalingFactor);
   }
 }
 
-var drawGroup = function(yOffsetInChart, groupIdx, group)
+var drawGroup = function(groupIdx, group, yOffsetInChart, scalingFactor)
 {
   let groupId = "group"+groupIdx;
   console.log("Drawing " + groupId);
@@ -69,14 +73,15 @@ var drawGroup = function(yOffsetInChart, groupIdx, group)
   const bars = group.barList;
   for (let i = 0; i < bars.length; i++)
   {
-    groupYSpaceConsumed += drawBar(groupYSpaceConsumed, groupIdx, i, bars[i]);
+    groupYSpaceConsumed += drawBar(groupIdx, i, bars[i],
+                                   groupYSpaceConsumed, scalingFactor);
   }
 
   // Return Y space consumed
   return groupYSpaceConsumed + GROUP_VERTICAL_SPACE;
 }
 
-var drawBar = function(yOffsetInGroup, groupIdx, barIdx, bar)
+var drawBar = function(groupIdx, barIdx, bar, yOffsetInGroup, scalingFactor)
 {
   let groupId = "group"+groupIdx;
   let barId = groupId+"bar"+barIdx;
@@ -106,14 +111,15 @@ var drawBar = function(yOffsetInGroup, groupIdx, barIdx, bar)
   const events = bar.eventList;
   for (let i = 0; i < events.length; i++)
   {
-    drawEvent(yOffsetInGroup, groupIdx, barIdx, i, events[i]);
+    drawEvent(groupIdx, barIdx, i, events[i], yOffsetInGroup, scalingFactor);
   }
 
   // Return Y space consumed
   return BAR_HEIGHT + BAR_VERTICAL_SPACE;
 }
 
-var drawEvent = function(yOffsetInGroup, groupIdx, barIdx, eventIdx, eventObj)
+var drawEvent = function(groupIdx, barIdx, eventIdx, eventObj,
+                         yOffsetInGroup, scalingFactor)
 {
   let barId = "group"+groupIdx+"bar"+barIdx;
   let eventId = barId+"event"+eventIdx;
@@ -122,9 +128,9 @@ var drawEvent = function(yOffsetInGroup, groupIdx, barIdx, eventIdx, eventObj)
   var g = d3.select("#"+barId).append("rect")
     .attr("class", "event")
     .attr("id", eventId)
-    .attr("x", BAR_LEFT_OFFSET + eventObj.startTime)
+    .attr("x", BAR_LEFT_OFFSET + (eventObj.startTime * scalingFactor))
     .attr("y", yOffsetInGroup)
-    .attr("width", eventObj.duration)
+    .attr("width", eventObj.duration * scalingFactor)
     .attr("height", BAR_HEIGHT)
     .attr("fill", eventObj.color)
     .attr("stroke", OUTLINE_COLOR);
@@ -171,9 +177,10 @@ function Group(name)
   }
 }
 
-function Chart(name)
+function Chart(name, maxTime)
 {
   this.name = name;
+  this.maxTime = maxTime;
   this.groupList = [];
 
   this.addGroup = function(group)
@@ -188,7 +195,8 @@ function Chart(name)
   }
 }
 
-var chart = new Chart("TestChart");
+
+var chart = new Chart("TestChart", 1000);
 
 var group1 = new Group("TestGroup1");
 
@@ -252,10 +260,7 @@ var correctEventWrapping = function(eventList, patternMaxTime)
 var genShannonChart = function(flight, dwell, vacant, balls, hands)
 {
   var patternMaxTime = (dwell + flight) * hands;
-  var scalingFactor = BAR_LENGTH / patternMaxTime;
-  console.log("1 time unit = " + scalingFactor + "px");
-
-  var patternChart = new Chart("Shannon's Juggling Theorem");
+  var patternChart = new Chart("Shannon's Juggling Theorem", patternMaxTime);
 
   var ballGroup = new Group("Balls");
   for (let b = 0; b < balls; b++)
@@ -267,11 +272,9 @@ var genShannonChart = function(flight, dwell, vacant, balls, hands)
     for (let h = 0; h < hands; h++)
     {
       let startTime = (ballOffset + (h * (flight + dwell))) % patternMaxTime;
-      ballEvents.push(new EventObj(startTime * scalingFactor,
-                                   dwell * scalingFactor,
-                                   BALL_COLOURS[b]));
+      ballEvents.push(new EventObj(startTime, dwell, BALL_COLOURS[b]));
     }
-    ballBar.eventList = correctEventWrapping(ballEvents, patternMaxTime * scalingFactor);
+    ballBar.eventList = correctEventWrapping(ballEvents, patternMaxTime);
     ballGroup.addBar(ballBar);
   }
   patternChart.addGroup(ballGroup);
@@ -286,11 +289,9 @@ var genShannonChart = function(flight, dwell, vacant, balls, hands)
     for (let b = 0; b < balls; b++)
     {
       let startTime = (handOffset + (b * (vacant + dwell))) % patternMaxTime;
-      handEvents.push(new EventObj(startTime * scalingFactor,
-                                   dwell * scalingFactor,
-                                   BALL_COLOURS[b]));
+      handEvents.push(new EventObj(startTime, dwell, BALL_COLOURS[b]));
     }
-    handBar.eventList = correctEventWrapping(handEvents, patternMaxTime * scalingFactor);
+    handBar.eventList = correctEventWrapping(handEvents, patternMaxTime);
     handGroup.addBar(handBar);
   }
   patternChart.addGroup(handGroup);
