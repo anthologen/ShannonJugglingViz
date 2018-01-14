@@ -338,5 +338,19 @@ var solveDwell = function(flight, vacant, balls, hands)
   return ((vacant * balls) - (flight * hands)) / (hands * balls);
 }
 
-drawChart(genShannonChart(385, 305, 155, 3, 2));
-//drawChart(genShannonChart(400, 200, 100, 4, 2)); // unrealistic
+// Long Flights
+var longFlight3Chart = genShannonChart(1100, 250, 650, 3, 2);
+// Long Dwell
+var longDwell3Chart = genShannonChart(400, 500, 100, 3, 2);
+// Times recorded from my recording
+var recorded3Chart = genShannonChart(385, 305, 155, 3, 2);
+// 2 Ball 1 Hand
+var twoBallsOneHandChart = genShannonChart(400, 300, 50, 2, 1);
+// 1 Ball 2 Hands
+var oneBallTwoHandsChart = genShannonChart(400, 300, 50, 1, 2);
+// 5 Balls 2 Hands
+var fiveBallsChart = genShannonChart(1500, 300, 420, 5, 2);
+// Unrealistic 4 ball
+var unrealistic4Chart = genShannonChart(400, 200, 100, 4, 2);
+
+drawChart(recorded3Chart);
