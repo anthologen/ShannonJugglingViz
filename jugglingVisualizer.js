@@ -43,10 +43,12 @@ function Group(name)
   }
 }
 
-function Chart(name, maxTime)
+// If no intervalTime is specified, default interval is the total time
+function Chart(name, maxTime, intervalTime=maxTime)
 {
   this.name = name;
   this.maxTime = maxTime;
+  this.intervalTime = intervalTime;
   this.groupList = [];
 
   this.addGroup = function(group)
@@ -67,15 +69,20 @@ function DrawParms()
   this.barHeight = 30;
   this.barVerticalSpace = 10;
   this.barLeftOffset = 100;
-  this.chartRightPad = 10;
+  this.chartRightPad = 20;
 
   this.groupVerticalSpace = 20;
-  this.titleYSpace = 30;
+  this.titleYSpace = 40;
 
   this.titleFontSize = 24;
   this.barFontSize = 18;
 
   this.outLineColor = "black";
+
+  this.shouldDrawIntervals = true;
+  this.shouldLabelIntervals = true;
+  this.intervalLabelFontSize = 8;
+  this.intervalTickColor = "black";
 }
 
 // --- Drawing Functions ---
@@ -114,22 +121,20 @@ var drawChart = function(chart, drawParms)
     .attr("font-size", drawParms.titleFontSize)
     .text(chart.name);
 
-  var scalingFactor = drawParms.barLength / chart.maxTime;
-  console.log("1 time unit = " + scalingFactor + "px");
-
   // Keep track of chart Y space already drawn on
   var chartYSpaceConsumed = drawParms.titleYSpace;
   // Draw groups
   for (let i = 0; i < groups.length; i++)
   {
     chartYSpaceConsumed += drawGroup(i, groups[i],
-                                     chartYSpaceConsumed, scalingFactor,
-                                     drawParms);
+                                     chartYSpaceConsumed, chart.maxTime,
+                                     chart.intervalTime, drawParms);
   }
 }
 
 var drawGroup = function(groupIdx, group,
-                         yOffsetInChart, scalingFactor, drawParms)
+                         yOffsetInChart, maxTime,
+                         intervalTime, drawParms)
 {
   let groupId = "group"+groupIdx;
   console.log("Drawing " + groupId);
@@ -145,8 +150,8 @@ var drawGroup = function(groupIdx, group,
   for (let i = 0; i < bars.length; i++)
   {
     groupYSpaceConsumed += drawBar(groupIdx, i, bars[i],
-                                   groupYSpaceConsumed, scalingFactor,
-                                   drawParms);
+                                   groupYSpaceConsumed, maxTime,
+                                   intervalTime, drawParms);
   }
 
   // Return Y space consumed
@@ -154,7 +159,8 @@ var drawGroup = function(groupIdx, group,
 }
 
 var drawBar = function(groupIdx, barIdx, bar,
-                       yOffsetInGroup, scalingFactor, drawParms)
+                       yOffsetInGroup, maxTime,
+                       intervalTime, drawParms)
 {
   let groupId = "group"+groupIdx;
   let barId = groupId+"bar"+barIdx;
@@ -187,19 +193,56 @@ var drawBar = function(groupIdx, barIdx, bar,
   for (let i = 0; i < events.length; i++)
   {
     drawEvent(groupIdx, barIdx, i, events[i],
-              yOffsetInGroup, scalingFactor, drawParms);
+              yOffsetInGroup, maxTime, drawParms);
+  }
+
+  // Draw intervals
+  if (drawParms.shouldDrawIntervals)
+  {
+    var numTicks = maxTime / intervalTime;
+    var intervalSize = drawParms.barLength / numTicks;
+    var intervalTimeStep = maxTime / numTicks;
+    for (let tick = 0; tick < numTicks; tick++)
+    {
+      let xPos = drawParms.barLeftOffset + (tick * intervalSize);
+      let timeText = tick * intervalTimeStep;
+      drawTick(barId, xPos, yOffsetInGroup, timeText, drawParms);
+    }
+    // Draw last tick
+    let xPos = drawParms.barLeftOffset + drawParms.barLength;
+    drawTick(barId, xPos, yOffsetInGroup, maxTime, drawParms);
   }
 
   // Return Y space consumed
   return drawParms.barHeight + drawParms.barVerticalSpace;
 }
 
+var drawTick = function(barId, xBasePos, yBasePos, tickText, drawParms)
+{
+  var intervalTick = d3.select("#"+barId).append("line")
+    .attr("x1", xBasePos)
+    .attr("y1", yBasePos)
+    .attr("x2", xBasePos)
+    .attr("y2", yBasePos + drawParms.barHeight)
+    .attr("stroke", drawParms.intervalTickColor);
+  if (drawParms.shouldLabelIntervals)
+  {
+    var intervalLabel = d3.select("#"+barId).append("text")
+      .attr("x", xBasePos)
+      .attr("y", yBasePos)
+      .attr("font-size", drawParms.intervalLabelFontSize)
+      .text(tickText);
+  }
+}
+
 var drawEvent = function(groupIdx, barIdx, eventIdx, eventObj,
-                         yOffsetInGroup, scalingFactor, drawParms)
+                         yOffsetInGroup, maxTime, drawParms)
 {
   let barId = "group"+groupIdx+"bar"+barIdx;
   let eventId = barId+"event"+eventIdx;
   console.log("Drawing " + eventId);
+
+  var scalingFactor = drawParms.barLength / maxTime;
 
   var g = d3.select("#"+barId).append("rect")
     .attr("class", "event")
@@ -375,4 +418,5 @@ var fiveBallsChart = genShannonChart(1500, 300, 420, 5, 2);
 // Unrealistic 4 ball
 var unrealistic4Chart = genShannonChart(400, 200, 100, 4, 2);
 
+recorded3Chart.intervalTime = 100;
 drawChart(recorded3Chart, defaultDrawParms);
