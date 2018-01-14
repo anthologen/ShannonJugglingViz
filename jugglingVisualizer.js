@@ -195,7 +195,6 @@ function Chart(name, maxTime)
   }
 }
 
-
 var chart = new Chart("TestChart", 1000);
 
 var group1 = new Group("TestGroup1");
@@ -259,6 +258,10 @@ var correctEventWrapping = function(eventList, patternMaxTime)
 
 var genShannonChart = function(flight, dwell, vacant, balls, hands)
 {
+  if ((dwell + flight) * hands !== (dwell + vacant) * balls)
+  {
+    console.log("Invalid quintuple!")
+  }
   var patternMaxTime = (dwell + flight) * hands;
   var patternChart = new Chart("Shannon's Juggling Theorem", patternMaxTime);
 
@@ -299,4 +302,41 @@ var genShannonChart = function(flight, dwell, vacant, balls, hands)
   return patternChart;
 }
 
+// Solve for one of variables in (F+D)H=(V+D)B
+var solveHands = function(flight, dwell, vacant, balls)
+{
+  var hands = (vacant + dwell) * balls / (flight + dwell);
+  if (hands % 1 !== 0)
+  {
+    console.warn('Hand solution ' + hands + ' is not an integer')
+  }
+  return hands;
+}
+
+var solveBalls = function(flight, dwell, vacant, hands)
+{
+  var balls = (flight + dwell) * hands / (vacant + dwell);
+  if (balls % 1 !== 0)
+  {
+    console.warn('Ball solution ' + balls + ' is not an integer')
+  }
+  return balls;
+}
+
+var solveFlight = function(dwell, vacant, balls, hands)
+{
+  return ((vacant * balls) + (dwell * bals) - (dwell * hands)) / hands;
+}
+
+var solveVacant = function(flight, dwell, balls, hands)
+{
+  return ((flight * hands ) + (dwell * hands) - (dwell * balls)) / balls;
+}
+
+var solveDwell = function(flight, vacant, balls, hands)
+{
+  return ((vacant * balls) - (flight * hands)) / (hands * balls);
+}
+
 drawChart(genShannonChart(385, 305, 155, 3, 2));
+//drawChart(genShannonChart(400, 200, 100, 4, 2)); // unrealistic
