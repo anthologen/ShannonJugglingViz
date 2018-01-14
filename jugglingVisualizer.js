@@ -1,141 +1,7 @@
-// Customizable Constants
-const BAR_LENGTH = 1000;
-const BAR_HEIGHT = 30;
-const BAR_VERTICAL_SPACE = 10;
-const BAR_LEFT_OFFSET = 100;
-const GROUP_VERTICAL_SPACE = 20;
-const OUTLINE_COLOR = "black";
+// Juggling Visualizer creates a Gantt Chart meant to display
+// when balls are dwelling in hands
 
-const TITLE_Y_SPACE = 30;
-const CHART_RIGHT_PAD = 10;
-
-const TITLE_FONT_SIZE = 24;
-const BAR_FONT_SIZE = 18;
-
-var drawChart = function(chart)
-{
-  const groups = chart.groupList;
-
-  // Calculate the svg size needed
-  var svgHeight = TITLE_Y_SPACE;
-
-  // Space used by each group
-  for (let i = 0; i < groups.length; i++)
-  {
-    let numBars = groups[i].barList.length;
-    svgHeight += numBars * (BAR_HEIGHT + BAR_VERTICAL_SPACE);
-  }
-  // Spacing between the groups
-  svgHeight += groups.length * GROUP_VERTICAL_SPACE;
-
-  var svgWidth = BAR_LEFT_OFFSET + BAR_LENGTH + CHART_RIGHT_PAD;
-
-  // Add the svg to draw on
-  var svg = d3.select("body").append("svg")
-    .attr("class", "chart")
-    .attr("id", "canvas")
-    .attr("width", svgWidth)
-    .attr("height", svgHeight);
-
-  // Add title
-  var title = d3.select("#canvas").append("text")
-    .attr("x", "0%")
-    .attr("y", TITLE_FONT_SIZE)
-    .attr("alignment-baseline", "central")
-    .attr("font-size", TITLE_FONT_SIZE)
-    .text(chart.name);
-
-  var scalingFactor = BAR_LENGTH / chart.maxTime;
-  console.log("1 time unit = " + scalingFactor + "px");
-
-  // Keep track of chart Y space already drawn on
-  var chartYSpaceConsumed = TITLE_Y_SPACE;
-  // Draw groups
-  for (let i = 0; i < groups.length; i++)
-  {
-    chartYSpaceConsumed += drawGroup(i, groups[i],
-                                     chartYSpaceConsumed, scalingFactor);
-  }
-}
-
-var drawGroup = function(groupIdx, group, yOffsetInChart, scalingFactor)
-{
-  let groupId = "group"+groupIdx;
-  console.log("Drawing " + groupId);
-
-  var groupG = d3.select("#canvas").append("g")
-    .attr("class", "group")
-    .attr("id", groupId)
-    .attr("transform", "translate(0,"+yOffsetInChart+")");
-
-  // Keep track of group Y space already drawn on
-  var groupYSpaceConsumed = 0;
-  const bars = group.barList;
-  for (let i = 0; i < bars.length; i++)
-  {
-    groupYSpaceConsumed += drawBar(groupIdx, i, bars[i],
-                                   groupYSpaceConsumed, scalingFactor);
-  }
-
-  // Return Y space consumed
-  return groupYSpaceConsumed + GROUP_VERTICAL_SPACE;
-}
-
-var drawBar = function(groupIdx, barIdx, bar, yOffsetInGroup, scalingFactor)
-{
-  let groupId = "group"+groupIdx;
-  let barId = groupId+"bar"+barIdx;
-  console.log("Drawing " + barId);
-
-  var barG = d3.select("#"+groupId).append("g")
-    .attr("class", "bar")
-    .attr("id", barId);
-
-  var barOutline = d3.select("#"+barId).append("rect")
-    .attr("class", "barOutline")
-    .attr("id", barId + "outline")
-    .attr("x", BAR_LEFT_OFFSET)
-    .attr("y", yOffsetInGroup)
-    .attr("width", BAR_LENGTH)
-    .attr("height", BAR_HEIGHT)
-    .attr("fill", "none")
-    .attr("stroke", OUTLINE_COLOR);
-
-  var barLabel = d3.select("#"+barId).append("text")
-    .attr("x", 0)
-    .attr("y", yOffsetInGroup + (BAR_HEIGHT / 2) + (BAR_FONT_SIZE / 2))
-    .attr("font-size", BAR_FONT_SIZE)
-    .text(bar.name);
-
-  // No validations done on events - they may overlap
-  const events = bar.eventList;
-  for (let i = 0; i < events.length; i++)
-  {
-    drawEvent(groupIdx, barIdx, i, events[i], yOffsetInGroup, scalingFactor);
-  }
-
-  // Return Y space consumed
-  return BAR_HEIGHT + BAR_VERTICAL_SPACE;
-}
-
-var drawEvent = function(groupIdx, barIdx, eventIdx, eventObj,
-                         yOffsetInGroup, scalingFactor)
-{
-  let barId = "group"+groupIdx+"bar"+barIdx;
-  let eventId = barId+"event"+eventIdx;
-  console.log("Drawing " + eventId);
-
-  var g = d3.select("#"+barId).append("rect")
-    .attr("class", "event")
-    .attr("id", eventId)
-    .attr("x", BAR_LEFT_OFFSET + (eventObj.startTime * scalingFactor))
-    .attr("y", yOffsetInGroup)
-    .attr("width", eventObj.duration * scalingFactor)
-    .attr("height", BAR_HEIGHT)
-    .attr("fill", eventObj.color)
-    .attr("stroke", OUTLINE_COLOR);
-}
-
+// --- Chart Object Definitions ---
 function EventObj(startTime, duration, color)
 {
   this.startTime = startTime;
@@ -195,30 +61,158 @@ function Chart(name, maxTime)
   }
 }
 
-var chart = new Chart("TestChart", 1000);
+function DrawParms()
+{
+  this.barLength = 1000;
+  this.barHeight = 30;
+  this.barVerticalSpace = 10;
+  this.barLeftOffset = 100;
+  this.chartRightPad = 10;
 
-var group1 = new Group("TestGroup1");
+  this.groupVerticalSpace = 20;
+  this.titleYSpace = 30;
 
-var bar1 = new Bar("Bar1");
-bar1.addEvent(new EventObj(0, 100, "red"));
-group1.addBar(bar1);
+  this.titleFontSize = 24;
+  this.barFontSize = 18;
 
-var bar2 = new Bar("Bar2")
-bar2.addEvent(new EventObj(100, 200, "blue"));
-group1.addBar(bar2);
+  this.outLineColor = "black";
+}
 
-chart.addGroup(group1);
+// --- Drawing Functions ---
+var drawChart = function(chart, drawParms)
+{
+  const groups = chart.groupList;
 
-var group2 = new Group("TestGroup2");
+  // Calculate the svg size needed
+  var svgHeight = drawParms.titleYSpace;
 
-var bar3 =  new Bar("Bar3");
-bar3.addEvent(new EventObj(50, 150, "green"));
-group2.addBar(bar3);
+  // Space used by each group
+  for (let i = 0; i < groups.length; i++)
+  {
+    let numBars = groups[i].barList.length;
+    svgHeight += numBars * (drawParms.barHeight + drawParms.barVerticalSpace);
+  }
+  // Spacing between the groups
+  svgHeight += groups.length * drawParms.groupVerticalSpace;
 
-chart.addGroup(group2);
+  var svgWidth = drawParms.barLeftOffset
+                  + drawParms.barLength
+                  + drawParms.chartRightPad;
 
-//drawChart(chart);
+  // Add the svg to draw on
+  var svg = d3.select("body").append("svg")
+    .attr("class", "chart")
+    .attr("id", "canvas")
+    .attr("width", svgWidth)
+    .attr("height", svgHeight);
 
+  // Add title
+  var title = d3.select("#canvas").append("text")
+    .attr("x", "0%")
+    .attr("y", drawParms.titleFontSize)
+    .attr("alignment-baseline", "central")
+    .attr("font-size", drawParms.titleFontSize)
+    .text(chart.name);
+
+  var scalingFactor = drawParms.barLength / chart.maxTime;
+  console.log("1 time unit = " + scalingFactor + "px");
+
+  // Keep track of chart Y space already drawn on
+  var chartYSpaceConsumed = drawParms.titleYSpace;
+  // Draw groups
+  for (let i = 0; i < groups.length; i++)
+  {
+    chartYSpaceConsumed += drawGroup(i, groups[i],
+                                     chartYSpaceConsumed, scalingFactor,
+                                     drawParms);
+  }
+}
+
+var drawGroup = function(groupIdx, group,
+                         yOffsetInChart, scalingFactor, drawParms)
+{
+  let groupId = "group"+groupIdx;
+  console.log("Drawing " + groupId);
+
+  var groupG = d3.select("#canvas").append("g")
+    .attr("class", "group")
+    .attr("id", groupId)
+    .attr("transform", "translate(0,"+yOffsetInChart+")");
+
+  // Keep track of group Y space already drawn on
+  var groupYSpaceConsumed = 0;
+  const bars = group.barList;
+  for (let i = 0; i < bars.length; i++)
+  {
+    groupYSpaceConsumed += drawBar(groupIdx, i, bars[i],
+                                   groupYSpaceConsumed, scalingFactor,
+                                   drawParms);
+  }
+
+  // Return Y space consumed
+  return groupYSpaceConsumed + drawParms.groupVerticalSpace;
+}
+
+var drawBar = function(groupIdx, barIdx, bar,
+                       yOffsetInGroup, scalingFactor, drawParms)
+{
+  let groupId = "group"+groupIdx;
+  let barId = groupId+"bar"+barIdx;
+  console.log("Drawing " + barId);
+
+  var barG = d3.select("#"+groupId).append("g")
+    .attr("class", "bar")
+    .attr("id", barId);
+
+  var barOutline = d3.select("#"+barId).append("rect")
+    .attr("class", "barOutline")
+    .attr("id", barId + "outline")
+    .attr("x", drawParms.barLeftOffset)
+    .attr("y", yOffsetInGroup)
+    .attr("width", drawParms.barLength)
+    .attr("height", drawParms.barHeight)
+    .attr("fill", "none")
+    .attr("stroke", drawParms.outLineColor);
+
+  var barLabel = d3.select("#"+barId).append("text")
+    .attr("x", 0)
+    .attr("y", (yOffsetInGroup
+                + (drawParms.barHeight / 2)
+                + (drawParms.barFontSize / 2)))
+    .attr("font-size", drawParms.barFontSize)
+    .text(bar.name);
+
+  // No validations done on events - they may overlap
+  const events = bar.eventList;
+  for (let i = 0; i < events.length; i++)
+  {
+    drawEvent(groupIdx, barIdx, i, events[i],
+              yOffsetInGroup, scalingFactor, drawParms);
+  }
+
+  // Return Y space consumed
+  return drawParms.barHeight + drawParms.barVerticalSpace;
+}
+
+var drawEvent = function(groupIdx, barIdx, eventIdx, eventObj,
+                         yOffsetInGroup, scalingFactor, drawParms)
+{
+  let barId = "group"+groupIdx+"bar"+barIdx;
+  let eventId = barId+"event"+eventIdx;
+  console.log("Drawing " + eventId);
+
+  var g = d3.select("#"+barId).append("rect")
+    .attr("class", "event")
+    .attr("id", eventId)
+    .attr("x", drawParms.barLeftOffset + (eventObj.startTime * scalingFactor))
+    .attr("y", yOffsetInGroup)
+    .attr("width", eventObj.duration * scalingFactor)
+    .attr("height", drawParms.barHeight)
+    .attr("fill", eventObj.color)
+    .attr("stroke", drawParms.outLineColor);
+}
+
+// --- Chart Generating Functions ---
 const BALL_COLOURS = [
   "red",
   "lime",
@@ -260,7 +254,9 @@ var genShannonChart = function(flight, dwell, vacant, balls, hands)
 {
   if ((dwell + flight) * hands !== (dwell + vacant) * balls)
   {
-    console.log("Invalid quintuple!")
+    console.warn("Invalid quintuple!");
+    console.warn("flight="+flight+" dwell="+dwell+" vacant="+vacant
+                  +" balls="+balls+" hands="+hands);
   }
   var patternMaxTime = (dwell + flight) * hands;
   var patternChart = new Chart("Shannon's Juggling Theorem", patternMaxTime);
@@ -338,6 +334,32 @@ var solveDwell = function(flight, vacant, balls, hands)
   return ((vacant * balls) - (flight * hands)) / (hands * balls);
 }
 
+// Example Charts
+var defaultDrawParms = new DrawParms();
+
+var testChart = new Chart("TestChart", 1000);
+
+var group1 = new Group("TestGroup1");
+
+var bar1 = new Bar("Bar1");
+bar1.addEvent(new EventObj(0, 100, "red"));
+group1.addBar(bar1);
+
+var bar2 = new Bar("Bar2")
+bar2.addEvent(new EventObj(100, 200, "blue"));
+group1.addBar(bar2);
+
+testChart.addGroup(group1);
+
+var group2 = new Group("TestGroup2");
+
+var bar3 =  new Bar("Bar3");
+bar3.addEvent(new EventObj(50, 150, "green"));
+group2.addBar(bar3);
+
+testChart.addGroup(group2);
+//drawChart(testChart, defaultDrawParms);
+
 // Long Flights
 var longFlight3Chart = genShannonChart(1100, 250, 650, 3, 2);
 // Long Dwell
@@ -347,10 +369,10 @@ var recorded3Chart = genShannonChart(385, 305, 155, 3, 2);
 // 2 Ball 1 Hand
 var twoBallsOneHandChart = genShannonChart(400, 300, 50, 2, 1);
 // 1 Ball 2 Hands
-var oneBallTwoHandsChart = genShannonChart(400, 300, 50, 1, 2);
+var oneBallTwoHandsChart = genShannonChart(200, 100, 500, 1, 2);
 // 5 Balls 2 Hands
 var fiveBallsChart = genShannonChart(1500, 300, 420, 5, 2);
 // Unrealistic 4 ball
 var unrealistic4Chart = genShannonChart(400, 200, 100, 4, 2);
 
-drawChart(recorded3Chart);
+drawChart(recorded3Chart, defaultDrawParms);
