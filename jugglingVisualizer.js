@@ -9,9 +9,10 @@ function EventObj(startTime, duration, color)
   this.color = color;
 }
 
-function Bar(name)
+function Bar(name, iconLink=null)
 {
   this.name = name;
+  this.iconLink = iconLink;
   this.eventList = [];
 
   this.addEvent = function(eventObj)
@@ -83,6 +84,8 @@ function DrawParms()
   this.shouldLabelIntervals = true;
   this.intervalLabelFontSize = 8;
   this.intervalTickColor = "black";
+
+  this.iconDistanceFromBar = 5;
 }
 
 // --- Drawing Functions ---
@@ -213,6 +216,20 @@ var drawBar = function(groupIdx, barIdx, bar,
     drawTick(barId, xPos, yOffsetInGroup, maxTime, drawParms);
   }
 
+  // Draw icon if it is provided
+  if (bar.iconLink)
+  {
+    console.log("Bar " + barId + " using icon " + bar.iconLink);
+    // Assumes squre icon
+    var barIcon = d3.select("#"+barId).append("image")
+      .attr("xlink:href", bar.iconLink)
+      .attr("width", drawParms.barHeight)
+      .attr("height", drawParms.barHeight)
+      .attr("x", drawParms.barLeftOffset
+                  - (drawParms.barHeight + drawParms.iconDistanceFromBar))
+      .attr("y", yOffsetInGroup);
+  }
+
   // Return Y space consumed
   return drawParms.barHeight + drawParms.barVerticalSpace;
 }
@@ -293,6 +310,7 @@ var correctEventWrapping = function(eventList, patternMaxTime)
   return correctedEventList;
 };
 
+// Does not generate realistic patterns for even number of balls
 var genShannonChart = function(flight, dwell, vacant, balls, hands)
 {
   if ((dwell + flight) * hands !== (dwell + vacant) * balls)
@@ -380,35 +398,30 @@ var solveDwell = function(flight, vacant, balls, hands)
 // Example Charts
 var defaultDrawParms = new DrawParms();
 
+
 var testChart = new Chart("TestChart", 1000);
 
 var group1 = new Group("TestGroup1");
-
 var bar1 = new Bar("Bar1");
 bar1.addEvent(new EventObj(0, 100, "red"));
 group1.addBar(bar1);
-
 var bar2 = new Bar("Bar2")
 bar2.addEvent(new EventObj(100, 200, "blue"));
 group1.addBar(bar2);
-
 testChart.addGroup(group1);
 
 var group2 = new Group("TestGroup2");
-
 var bar3 =  new Bar("Bar3");
 bar3.addEvent(new EventObj(50, 150, "green"));
 group2.addBar(bar3);
-
 testChart.addGroup(group2);
+
 //drawChart(testChart, defaultDrawParms);
 
 // Long Flights
 var longFlight3Chart = genShannonChart(1100, 250, 650, 3, 2);
 // Long Dwell
 var longDwell3Chart = genShannonChart(400, 500, 100, 3, 2);
-// Times recorded from my recording
-var recorded3Chart = genShannonChart(385, 305, 155, 3, 2);
 // 2 Ball 1 Hand
 var twoBallsOneHandChart = genShannonChart(400, 300, 50, 2, 1);
 // 1 Ball 2 Hands
@@ -417,6 +430,27 @@ var oneBallTwoHandsChart = genShannonChart(200, 100, 500, 1, 2);
 var fiveBallsChart = genShannonChart(1500, 300, 420, 5, 2);
 // Unrealistic 4 ball
 var unrealistic4Chart = genShannonChart(400, 200, 100, 4, 2);
+// Times recorded from my recording
+var recorded3Chart = genShannonChart(385, 305, 155, 3, 2);
 
 recorded3Chart.intervalTime = 100;
+defaultDrawParms.shouldDrawIntervals = true;
+
+recorded3Chart.groupList[0].barList[0].name = "Red Ball";
+recorded3Chart.groupList[0].barList[0].iconLink = "icons/redBall.svg";
+
+recorded3Chart.groupList[0].barList[1].name = "Green Ball";
+recorded3Chart.groupList[0].barList[1].iconLink = "icons/greenBall.svg";
+
+recorded3Chart.groupList[0].barList[2].name = "Blue Ball";
+recorded3Chart.groupList[0].barList[2].iconLink = "icons/blueBall.svg";
+
+recorded3Chart.groupList[1].barList[0].name = "Left Hand";
+recorded3Chart.groupList[1].barList[0].iconLink = "icons/leftHand.svg";
+
+recorded3Chart.groupList[1].barList[1].name = "Right Hand";
+recorded3Chart.groupList[1].barList[1].iconLink = "icons/rightHand.svg";
+
+defaultDrawParms.barLeftOffset = 120;
+
 drawChart(recorded3Chart, defaultDrawParms);
