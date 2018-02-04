@@ -64,30 +64,6 @@ function Chart(name, maxTime, intervalTime=maxTime)
   }
 }
 
-function DrawParms()
-{
-  this.barLength = 1000;
-  this.barHeight = 30;
-  this.barVerticalSpace = 10;
-  this.barLeftOffset = 100;
-  this.chartRightPad = 20;
-
-  this.groupVerticalSpace = 20;
-  this.titleYSpace = 40;
-
-  this.titleFontSize = 24;
-  this.barFontSize = 18;
-
-  this.outLineColor = "black";
-
-  this.shouldDrawIntervals = true;
-  this.shouldLabelIntervals = true;
-  this.intervalLabelFontSize = 8;
-  this.intervalTickColor = "black";
-
-  this.iconDistanceFromBar = 5;
-}
-
 // --- Drawing Functions ---
 var drawChart = function(chart, drawParms)
 {
@@ -118,9 +94,10 @@ var drawChart = function(chart, drawParms)
 
   // Add title
   var title = d3.select("#canvas").append("text")
-    .attr("x", "0%")
+    .attr("x", "50%")
     .attr("y", drawParms.titleFontSize)
-    .attr("alignment-baseline", "central")
+    .attr("text-anchor", "middle")
+    .attr("alignment-baseline", "middle")
     .attr("font-size", drawParms.titleFontSize)
     .text(chart.name);
 
@@ -359,79 +336,79 @@ var genShannonChart = function(flight, dwell, vacant, balls, hands)
   return patternChart;
 }
 
-// Solve for one of variables in (F+D)H=(V+D)B
-var solveHands = function(flight, dwell, vacant, balls)
-{
-  var hands = (vacant + dwell) * balls / (flight + dwell);
-  if (hands % 1 !== 0)
-  {
-    console.warn('Hand solution ' + hands + ' is not an integer')
-  }
-  return hands;
-}
-
-var solveBalls = function(flight, dwell, vacant, hands)
-{
-  var balls = (flight + dwell) * hands / (vacant + dwell);
-  if (balls % 1 !== 0)
-  {
-    console.warn('Ball solution ' + balls + ' is not an integer')
-  }
-  return balls;
-}
-
-var solveFlight = function(dwell, vacant, balls, hands)
-{
-  return ((vacant * balls) + (dwell * bals) - (dwell * hands)) / hands;
-}
-
-var solveVacant = function(flight, dwell, balls, hands)
-{
-  return ((flight * hands ) + (dwell * hands) - (dwell * balls)) / balls;
-}
-
-var solveDwell = function(flight, vacant, balls, hands)
-{
-  return ((vacant * balls) - (flight * hands)) / (hands * balls);
-}
-
 // Example Charts
+function DrawParms()
+{
+  this.barLength = 1000;
+  this.barHeight = 30;
+  this.barVerticalSpace = 10;
+  this.barLeftOffset = 100;
+  this.chartRightPad = 20;
+
+  this.groupVerticalSpace = 20;
+  this.titleYSpace = 40;
+
+  this.titleFontSize = 24;
+  this.barFontSize = 18;
+
+  this.outLineColor = "black";
+
+  this.shouldDrawIntervals = true;
+  this.shouldLabelIntervals = true;
+  this.intervalLabelFontSize = 8;
+  this.intervalTickColor = "black";
+
+  this.iconDistanceFromBar = 5;
+}
+
 var defaultDrawParms = new DrawParms();
 
 
 var testChart = new Chart("TestChart", 1000);
 
 var group1 = new Group("TestGroup1");
+
 var bar1 = new Bar("Bar1");
 bar1.addEvent(new EventObj(0, 100, "red"));
 group1.addBar(bar1);
+
 var bar2 = new Bar("Bar2")
 bar2.addEvent(new EventObj(100, 200, "blue"));
 group1.addBar(bar2);
+
 testChart.addGroup(group1);
 
 var group2 = new Group("TestGroup2");
+
 var bar3 =  new Bar("Bar3");
 bar3.addEvent(new EventObj(50, 150, "green"));
 group2.addBar(bar3);
+
 testChart.addGroup(group2);
 
 //drawChart(testChart, defaultDrawParms);
 
-// Long Flights
+// 3 Balls 2 Hands (Long Flights)
 var longFlight3Chart = genShannonChart(1100, 250, 650, 3, 2);
-// Long Dwell
+longFlight3Chart.name = "3 Ball Cascade (Long Flight Times)";
+// 3 Balls 2 Hands (Long Dwell)
 var longDwell3Chart = genShannonChart(400, 500, 100, 3, 2);
+longDwell3Chart.name = "3 Ball Cascade (Long Dwell Times)";
 // 2 Ball 1 Hand
 var twoBallsOneHandChart = genShannonChart(400, 300, 50, 2, 1);
+twoBallsOneHandChart.name = "'40' Pattern";
 // 1 Ball 2 Hands
 var oneBallTwoHandsChart = genShannonChart(200, 100, 500, 1, 2);
+oneBallTwoHandsChart.name = "'1' Pattern";
 // 5 Balls 2 Hands
 var fiveBallsChart = genShannonChart(1500, 300, 420, 5, 2);
-// Unrealistic 4 ball
+fiveBallsChart.name = "5 Ball Cascade";
+// Unrealistic 4 Ball Cascade
 var unrealistic4Chart = genShannonChart(400, 200, 100, 4, 2);
-// Times recorded from my recording
+unrealistic4Chart.name = "Unrealistic 4 Ball Cascade";
+// 3 Ball Cascade using times from my recorded GIF
 var recorded3Chart = genShannonChart(385, 305, 155, 3, 2);
+recorded3Chart.name = "3 Ball Cascade";
 
 recorded3Chart.intervalTime = 100;
 defaultDrawParms.shouldDrawIntervals = true;
