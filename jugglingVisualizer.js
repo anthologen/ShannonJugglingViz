@@ -2,6 +2,8 @@
 // when balls are dwelling in hands
 
 // --- Chart Object Definitions ---
+
+// An object specifying where to draw an individual coloured rectangle
 function EventObj(startTime, duration, color)
 {
   this.startTime = startTime;
@@ -9,6 +11,7 @@ function EventObj(startTime, duration, color)
   this.color = color;
 }
 
+// A single timeline that can show multiple events
 function Bar(name, iconLink=null)
 {
   this.name = name;
@@ -27,6 +30,7 @@ function Bar(name, iconLink=null)
   }
 }
 
+// A group of bars
 function Group(name)
 {
   this.name = name;
@@ -44,6 +48,7 @@ function Group(name)
   }
 }
 
+// A chart consists of a list of bar groupings
 // If no intervalTime is specified, default interval is the total time
 function Chart(name, maxTime, intervalTime=maxTime)
 {
@@ -64,7 +69,34 @@ function Chart(name, maxTime, intervalTime=maxTime)
   }
 }
 
+// Object of default drawing parameters
+function DrawParms()
+{
+  this.barLength = 1000;
+  this.barHeight = 30;
+  this.barVerticalSpace = 10;
+  this.barLeftOffset = 100;
+  this.chartRightPad = 20;
+
+  this.groupVerticalSpace = 20;
+  this.titleYSpace = 40;
+
+  this.titleFontSize = 24;
+  this.barFontSize = 18;
+
+  this.outLineColor = "black";
+
+  this.shouldDrawIntervals = true;
+  this.shouldLabelIntervals = true;
+  this.intervalLabelFontSize = 8;
+  this.intervalTickColor = "black";
+
+  this.iconDistanceFromBar = 5;
+}
+
 // --- Drawing Functions ---
+
+// Draw the given Chart object using the given drawing parameters
 var drawChart = function(chart, drawParms)
 {
   const groups = chart.groupList;
@@ -224,6 +256,8 @@ var drawTick = function(barId, xBasePos, yBasePos, tickText, drawParms)
     var intervalLabel = d3.select("#"+barId).append("text")
       .attr("x", xBasePos)
       .attr("y", yBasePos)
+      .attr("text-anchor", "middle")
+      .attr("alignment-baseline", "middle")
       .attr("font-size", drawParms.intervalLabelFontSize)
       .text(tickText);
   }
@@ -248,186 +282,3 @@ var drawEvent = function(groupIdx, barIdx, eventIdx, eventObj,
     .attr("fill", eventObj.color)
     .attr("stroke", drawParms.outLineColor);
 }
-
-// --- Chart Generating Functions ---
-const BALL_COLOURS = [
-  "red",
-  "lime",
-  "deepskyblue",
-  "darkorange",
-  "gold",
-  "blueviolet",
-  "magenta",
-  "tan",
-  "navy"
-];
-
-var correctEventWrapping = function(eventList, patternMaxTime)
-{
-  let correctedEventList = [];
-  for (let i = 0; i < eventList.length; i++)
-  {
-    let eventObj = eventList[i];
-
-    if (eventObj.startTime + eventObj.duration > patternMaxTime)
-    {
-      // Break the event into two (wrapping around to the start)
-      let overshoot = (eventObj.startTime + eventObj.duration) - patternMaxTime;
-
-      correctedEventList.push(new EventObj(eventObj.startTime,
-                                           eventObj.duration - overshoot,
-                                           eventObj.color));
-      correctedEventList.push(new EventObj(0, overshoot, eventObj.color));
-    }
-    else
-    {
-      correctedEventList.push(eventObj);
-    }
-  }
-  return correctedEventList;
-};
-
-// Does not generate realistic patterns for even number of balls
-var genShannonChart = function(flight, dwell, vacant, balls, hands)
-{
-  if ((dwell + flight) * hands !== (dwell + vacant) * balls)
-  {
-    console.warn("Invalid quintuple!");
-    console.warn("flight="+flight+" dwell="+dwell+" vacant="+vacant
-                  +" balls="+balls+" hands="+hands);
-  }
-  var patternMaxTime = (dwell + flight) * hands;
-  var patternChart = new Chart("Shannon's Juggling Theorem", patternMaxTime);
-
-  var ballGroup = new Group("Balls");
-  for (let b = 0; b < balls; b++)
-  {
-    let ballBar = new Bar("Ball " + b);
-
-    let ballOffset = b * (dwell + vacant);
-    let ballEvents = [];
-    for (let h = 0; h < hands; h++)
-    {
-      let startTime = (ballOffset + (h * (flight + dwell))) % patternMaxTime;
-      ballEvents.push(new EventObj(startTime, dwell, BALL_COLOURS[b]));
-    }
-    ballBar.eventList = correctEventWrapping(ballEvents, patternMaxTime);
-    ballGroup.addBar(ballBar);
-  }
-  patternChart.addGroup(ballGroup);
-
-  var handGroup = new Group("Hands");
-  for (let h = 0; h < hands; h++)
-  {
-    let handBar = new Bar("Hand " + h);
-
-    let handOffset = h * (dwell + flight);
-    let handEvents = [];
-    for (let b = 0; b < balls; b++)
-    {
-      let startTime = (handOffset + (b * (vacant + dwell))) % patternMaxTime;
-      handEvents.push(new EventObj(startTime, dwell, BALL_COLOURS[b]));
-    }
-    handBar.eventList = correctEventWrapping(handEvents, patternMaxTime);
-    handGroup.addBar(handBar);
-  }
-  patternChart.addGroup(handGroup);
-
-  return patternChart;
-}
-
-// Example Charts
-function DrawParms()
-{
-  this.barLength = 1000;
-  this.barHeight = 30;
-  this.barVerticalSpace = 10;
-  this.barLeftOffset = 100;
-  this.chartRightPad = 20;
-
-  this.groupVerticalSpace = 20;
-  this.titleYSpace = 40;
-
-  this.titleFontSize = 24;
-  this.barFontSize = 18;
-
-  this.outLineColor = "black";
-
-  this.shouldDrawIntervals = true;
-  this.shouldLabelIntervals = true;
-  this.intervalLabelFontSize = 8;
-  this.intervalTickColor = "black";
-
-  this.iconDistanceFromBar = 5;
-}
-
-var defaultDrawParms = new DrawParms();
-
-
-var testChart = new Chart("TestChart", 1000);
-
-var group1 = new Group("TestGroup1");
-
-var bar1 = new Bar("Bar1");
-bar1.addEvent(new EventObj(0, 100, "red"));
-group1.addBar(bar1);
-
-var bar2 = new Bar("Bar2")
-bar2.addEvent(new EventObj(100, 200, "blue"));
-group1.addBar(bar2);
-
-testChart.addGroup(group1);
-
-var group2 = new Group("TestGroup2");
-
-var bar3 =  new Bar("Bar3");
-bar3.addEvent(new EventObj(50, 150, "green"));
-group2.addBar(bar3);
-
-testChart.addGroup(group2);
-
-//drawChart(testChart, defaultDrawParms);
-
-// 3 Balls 2 Hands (Long Flights)
-var longFlight3Chart = genShannonChart(1100, 250, 650, 3, 2);
-longFlight3Chart.name = "3 Ball Cascade (Long Flight Times)";
-// 3 Balls 2 Hands (Long Dwell)
-var longDwell3Chart = genShannonChart(400, 500, 100, 3, 2);
-longDwell3Chart.name = "3 Ball Cascade (Long Dwell Times)";
-// 2 Ball 1 Hand
-var twoBallsOneHandChart = genShannonChart(400, 300, 50, 2, 1);
-twoBallsOneHandChart.name = "'40' Pattern";
-// 1 Ball 2 Hands
-var oneBallTwoHandsChart = genShannonChart(200, 100, 500, 1, 2);
-oneBallTwoHandsChart.name = "'1' Pattern";
-// 5 Balls 2 Hands
-var fiveBallsChart = genShannonChart(1500, 300, 420, 5, 2);
-fiveBallsChart.name = "5 Ball Cascade";
-// Unrealistic 4 Ball Cascade
-var unrealistic4Chart = genShannonChart(400, 200, 100, 4, 2);
-unrealistic4Chart.name = "Unrealistic 4 Ball Cascade";
-// 3 Ball Cascade using times from my recorded GIF
-var recorded3Chart = genShannonChart(385, 305, 155, 3, 2);
-recorded3Chart.name = "3 Ball Cascade";
-
-recorded3Chart.intervalTime = 100;
-defaultDrawParms.shouldDrawIntervals = true;
-
-recorded3Chart.groupList[0].barList[0].name = "Red Ball";
-recorded3Chart.groupList[0].barList[0].iconLink = "icons/redBall.svg";
-
-recorded3Chart.groupList[0].barList[1].name = "Green Ball";
-recorded3Chart.groupList[0].barList[1].iconLink = "icons/greenBall.svg";
-
-recorded3Chart.groupList[0].barList[2].name = "Blue Ball";
-recorded3Chart.groupList[0].barList[2].iconLink = "icons/blueBall.svg";
-
-recorded3Chart.groupList[1].barList[0].name = "Left Hand";
-recorded3Chart.groupList[1].barList[0].iconLink = "icons/leftHand.svg";
-
-recorded3Chart.groupList[1].barList[1].name = "Right Hand";
-recorded3Chart.groupList[1].barList[1].iconLink = "icons/rightHand.svg";
-
-defaultDrawParms.barLeftOffset = 120;
-
-drawChart(recorded3Chart, defaultDrawParms);
