@@ -1,3 +1,6 @@
+// The logic for building charts and their associated parameters
+// See examples below for how to use these tools
+
 // --- Chart Generating Functions ---
 const BALL_COLOURS = [
   "red",
@@ -10,8 +13,9 @@ const BALL_COLOURS = [
   "tan",
   "navy"
 ];
+// TODO: Automatically select colours instead of using these hand-picked high-contrast ones
 
-// Events that go over the end of the bar get wrapped around to the beginning
+// In the chart, events that go over the end of the bar get wrapped around to the beginning
 var correctEventWrapping = function(eventList, patternMaxTime)
 {
   let correctedEventList = [];
@@ -37,18 +41,19 @@ var correctEventWrapping = function(eventList, patternMaxTime)
   return correctedEventList;
 };
 
-// Make a chart where each ball cycles through each hand
+// Make a chart where each ball cycles through each hand using the given
+// parameters from Shannon's Juggling Theorem
 // Does not generate realistic patterns for even number of balls
-var genShannonChart = function(flight, dwell, vacant, balls, hands)
+var genShannonChart = function(flight, dwell, vacant, balls, hands, title)
 {
   if ((dwell + flight) * hands !== (dwell + vacant) * balls)
   {
-    console.warn("Invalid quintuple!");
-    console.warn("flight="+flight+" dwell="+dwell+" vacant="+vacant
+    console.error("Invalid quintuple!");
+    console.error("flight="+flight+" dwell="+dwell+" vacant="+vacant
                   +" balls="+balls+" hands="+hands);
   }
   var patternMaxTime = (dwell + flight) * hands;
-  var patternChart = new Chart("Shannon's Juggling Theorem", patternMaxTime);
+  var patternChart = new Chart(title, patternMaxTime);
 
   var ballGroup = new Group("Balls");
   for (let b = 0; b < balls; b++)
@@ -88,93 +93,109 @@ var genShannonChart = function(flight, dwell, vacant, balls, hands)
 }
 
 // --- Example Charts ---
+// Draw the pre-made example chart with the selected index
+function drawExampleChart(exampleIdx)
+{
+  var exampleChartList = [];
 
-// 3 Balls 2 Hands (Long Flights)
-var longFlight3Chart = genShannonChart(1100, 250, 650, 3, 2);
-longFlight3Chart.name = "3 Ball Cascade (Long Flight Times)";
-// 3 Balls 2 Hands (Long Dwell)
-var longDwell3Chart = genShannonChart(400, 500, 100, 3, 2);
-longDwell3Chart.name = "3 Ball Cascade (Long Dwell Times)";
-// 2 Ball 1 Hand
-var twoBallsOneHandChart = genShannonChart(400, 300, 50, 2, 1);
-twoBallsOneHandChart.name = "'40' Pattern";
-// 1 Ball 2 Hands
-var oneBallTwoHandsChart = genShannonChart(200, 100, 500, 1, 2);
-oneBallTwoHandsChart.name = "'1' Pattern";
-// 5 Balls 2 Hands
-var fiveBallsChart = genShannonChart(1500, 300, 420, 5, 2);
-fiveBallsChart.name = "5 Ball Cascade";
-// Unrealistic 4 Ball Cascade
-var unrealistic4Chart = genShannonChart(400, 200, 100, 4, 2);
-unrealistic4Chart.name = "Unrealistic 4 Ball Cascade";
+  // [0] 3 Balls 2 Hands (Long Flights)
+  var longFlight3Chart = genShannonChart(1100, 250, 650, 3, 2, "3 Ball Cascade (Long Flight Times)");
+  exampleChartList.push(longFlight3Chart);
 
-// 3 Ball Cascade using times from my recorded GIF
-var recorded3Chart = genShannonChart(385, 305, 155, 3, 2);
-recorded3Chart.name = "3 Ball Cascade";
+  // [1] 3 Balls 2 Hands (Long Dwell)
+  var longDwell3Chart = genShannonChart(400, 500, 100, 3, 2, "3 Ball Cascade");
+  exampleChartList.push(longDwell3Chart);
 
-recorded3Chart.groupList[0].barList[0].name = "Red Ball";
-recorded3Chart.groupList[0].barList[0].iconLink = "icons/redBall.svg";
+  // [2] 2 Ball 1 Hand
+  var twoBallsOneHandChart = genShannonChart(400, 300, 50, 2, 1, "'40' Pattern");
+  exampleChartList.push(twoBallsOneHandChart);
 
-recorded3Chart.groupList[0].barList[1].name = "Green Ball";
-recorded3Chart.groupList[0].barList[1].iconLink = "icons/greenBall.svg";
+  // [3] 1 Ball 2 Hands
+  var oneBallTwoHandsChart = genShannonChart(200, 100, 500, 1, 2, "'1' Pattern");
+  exampleChartList.push(oneBallTwoHandsChart);
 
-recorded3Chart.groupList[0].barList[2].name = "Blue Ball";
-recorded3Chart.groupList[0].barList[2].iconLink = "icons/blueBall.svg";
+  // [4] 5 Balls 2 Hands
+  var fiveBallsChart = genShannonChart(1500, 300, 420, 5, 2, "5 Ball Cascade");
+  exampleChartList.push(fiveBallsChart);
 
-recorded3Chart.groupList[1].barList[0].name = "Left Hand";
-recorded3Chart.groupList[1].barList[0].iconLink = "icons/leftHand.svg";
+  // [5] Unrealistic 4 Ball Cascade
+  var unrealistic4Chart = genShannonChart(400, 200, 100, 4, 2, "Unrealistic 4 Ball Cascade");
+  exampleChartList.push(unrealistic4Chart);
 
-recorded3Chart.groupList[1].barList[1].name = "Right Hand";
-recorded3Chart.groupList[1].barList[1].iconLink = "icons/rightHand.svg";
+  // [6] 3 Ball Cascade using times from my recorded GIF
+  var recorded3Chart = genShannonChart(385, 305, 155, 3, 2, "3 Ball Cascade");
+  exampleChartList.push(recorded3Chart);
 
-recorded3Chart.intervalTime = 100; //ms
+  // [7] Nicely spaced 3 ball
+  var neat3Ball = genShannonChart(6, 3, 3, 3, 2, "3 Ball Cascade");
+  neat3Ball.intervalTime = 1;
+  exampleChartList.push(neat3Ball);
 
-var drawParms1 = new DrawParms();
-drawParms1.barLeftOffset = 120;
-drawParms1.shouldDrawIntervals = true;
 
-drawChart(recorded3Chart, drawParms1);
+  var drawParms1 = new DrawParms();
+  drawParms1.barLeftOffset = 120;
+  drawParms1.barLength = 300;
+  drawParms1.shouldLabelIntervals = false;
+  drawParms1.shouldDrawIntervals = true;
 
-// -- Example Chart without using generator function ---
-var custom31ExampleChart = new Chart("Hypothetical '31' Pattern Timeline", 600);
+  if (0 <= exampleIdx && exampleIdx < exampleChartList.length)
+  {
+    drawChart(exampleChartList[exampleIdx], drawParms1);
+  }
+  else
+  {
+    console.error("Invalid example index = %o", exampleIdx);
+  }
+}
 
-var ballGroup = new Group("Balls");
+// --- Example Chart without using generator function ---
+// Draw an example chart for the 31 juggling pattern
+function draw31PatternChartExample()
+{
+  var custom31ExampleChart = new Chart("'31' Pattern Timeline", 600);
 
-var redBallBar = new Bar("Red Ball");
-redBallBar.addEvent(new EventObj(0, 100, "red"));
-redBallBar.addEvent(new EventObj(200, 100, "red"));
-redBallBar.iconLink = "icons/redBall.svg";
-ballGroup.addBar(redBallBar);
+  var ballGroup = new Group("Balls");
 
-var greenBallBar = new Bar("Green Ball");
-greenBallBar.addEvent(new EventObj(100, 100, "lime"));
-greenBallBar.addEvent(new EventObj(500, 100, "lime"));
-greenBallBar.iconLink = "icons/greenBall.svg";
-ballGroup.addBar(greenBallBar);
+  var redBallBar = new Bar("Red Ball");
+  redBallBar.addEvent(new EventObj(0, 100, "red"));
+  redBallBar.addEvent(new EventObj(200, 100, "red"));
+  redBallBar.iconLink = "icons/redBall.svg";
+  ballGroup.addBar(redBallBar);
 
-custom31ExampleChart.addGroup(ballGroup);
+  var greenBallBar = new Bar("Green Ball");
+  greenBallBar.addEvent(new EventObj(100, 100, "lime"));
+  greenBallBar.addEvent(new EventObj(500, 100, "lime"));
+  greenBallBar.iconLink = "icons/greenBall.svg";
+  ballGroup.addBar(greenBallBar);
 
-var handGroup = new Group("Hands");
+  custom31ExampleChart.addGroup(ballGroup);
 
-var leftHandBar = new Bar("Left Hand");
-leftHandBar.addEvent(new EventObj(0, 100, "red"));
-leftHandBar.addEvent(new EventObj(500, 100, "lime"));
-leftHandBar.iconLink = "icons/leftHand.svg";
-handGroup.addBar(leftHandBar);
+  var handGroup = new Group("Hands");
 
-var rightHandBar = new Bar("Right Hand");
-rightHandBar.addEvent(new EventObj(100, 100, "lime"));
-rightHandBar.addEvent(new EventObj(200, 100, "red"));
-rightHandBar.iconLink = "icons/rightHand.svg";
-handGroup.addBar(rightHandBar);
+  var leftHandBar = new Bar("Left Hand");
+  leftHandBar.addEvent(new EventObj(0, 100, "red"));
+  leftHandBar.addEvent(new EventObj(500, 100, "lime"));
+  leftHandBar.iconLink = "icons/leftHand.svg";
+  handGroup.addBar(leftHandBar);
 
-custom31ExampleChart.addGroup(handGroup);
+  var rightHandBar = new Bar("Right Hand");
+  rightHandBar.addEvent(new EventObj(100, 100, "lime"));
+  rightHandBar.addEvent(new EventObj(200, 100, "red"));
+  rightHandBar.iconLink = "icons/rightHand.svg";
+  handGroup.addBar(rightHandBar);
 
-var drawParms2 = new DrawParms();
-drawParms2.barLength = 600;
-drawParms2.barHeight = 25;
-drawParms2.barLeftOffset = 120;
-drawParms2.shouldDrawIntervals = false;
+  custom31ExampleChart.addGroup(handGroup);
 
-// Uncomment the line below to draw this chart (and comment the other call)
-//drawChart(custom31ExampleChart, drawParms2);
+  custom31ExampleChart.intervalTime = 100; //ms
+
+  var drawParms31Example = new DrawParms();
+  drawParms31Example.barLength = 500;
+  drawParms31Example.barHeight = 25;
+  drawParms31Example.barLeftOffset = 120;
+  drawParms31Example.shouldDrawIntervals = true;
+  drawParms31Example.shouldLabelIntervals = true;
+
+  drawChart(custom31ExampleChart, drawParms31Example);
+}
+//drawExampleChart(7);
+draw31PatternChartExample();

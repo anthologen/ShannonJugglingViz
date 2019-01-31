@@ -1,5 +1,5 @@
-// Juggling Visualizer creates a Gantt Chart meant to display
-// when balls are dwelling in hands
+// Juggling Visualizer draws a Gantt Chart meant to display
+// when balls are dwelling in hands during a juggling pattern
 
 // --- Chart Object Definitions ---
 
@@ -15,19 +15,18 @@ function EventObj(startTime, duration, color)
 function Bar(name, iconLink=null)
 {
   this.name = name;
-  this.iconLink = iconLink;
+  this.iconLink = iconLink; // drawn to the left of the bar
   this.eventList = [];
-
-  this.addEvent = function(eventObj)
+}
+Bar.prototype.addEvent = function(eventObj)
+{
+  if (eventObj instanceof EventObj)
   {
-    if (eventObj instanceof EventObj)
-    {
-      this.eventList.push(eventObj);
-      return true;
-    }
-    console.log("Invalid event: %o", eventObj);
-    return false;
+    this.eventList.push(eventObj);
+    return true;
   }
+  console.error("Invalid event: %o", eventObj);
+  return false;
 }
 
 // A group of bars
@@ -35,17 +34,16 @@ function Group(name)
 {
   this.name = name;
   this.barList = [];
-
-  this.addBar = function(bar)
+}
+Group.prototype.addBar = function(bar)
+{
+  if (bar instanceof Bar)
   {
-    if (bar instanceof Bar)
-    {
-      this.barList.push(bar)
-      return true;
-    }
-    console.log("Invalid bar: %o", bar);
-    return false;
+    this.barList.push(bar)
+    return true;
   }
+  console.error("Invalid bar: %o", bar);
+  return false;
 }
 
 // A chart consists of a list of bar groupings
@@ -56,17 +54,16 @@ function Chart(name, maxTime, intervalTime=maxTime)
   this.maxTime = maxTime;
   this.intervalTime = intervalTime;
   this.groupList = [];
-
-  this.addGroup = function(group)
+}
+Chart.prototype.addGroup = function(group)
+{
+  if (group instanceof Group)
   {
-    if (group instanceof Group)
-    {
-      this.groupList.push(group);
-      return true;
-    }
-    console.log("Invalid group: %o", group);
-    return false;
+    this.groupList.push(group);
+    return true;
   }
+  console.error("Invalid group: %o", group);
+  return false;
 }
 
 // Object of default drawing parameters
@@ -134,6 +131,7 @@ var drawChart = function(chart, drawParms)
     .text(chart.name);
 
   // Keep track of chart Y space already drawn on
+  // to handle dynamically sizing Y components
   var chartYSpaceConsumed = drawParms.titleYSpace;
   // Draw groups
   for (let i = 0; i < groups.length; i++)
@@ -149,7 +147,7 @@ var drawGroup = function(groupIdx, group,
                          intervalTime, drawParms)
 {
   let groupId = "group"+groupIdx;
-  console.log("Drawing " + groupId);
+  console.info("Drawing " + groupId);
 
   var groupG = d3.select("#canvas").append("g")
     .attr("class", "group")
@@ -176,7 +174,7 @@ var drawBar = function(groupIdx, barIdx, bar,
 {
   let groupId = "group"+groupIdx;
   let barId = groupId+"bar"+barIdx;
-  console.log("Drawing " + barId);
+  console.info("Drawing " + barId);
 
   var barG = d3.select("#"+groupId).append("g")
     .attr("class", "bar")
@@ -228,7 +226,7 @@ var drawBar = function(groupIdx, barIdx, bar,
   // Draw icon if it is provided
   if (bar.iconLink)
   {
-    console.log("Bar " + barId + " using icon " + bar.iconLink);
+    console.info("Bar " + barId + " using icon " + bar.iconLink);
     // Assumes squre icon
     var barIcon = d3.select("#"+barId).append("image")
       .attr("xlink:href", bar.iconLink)
@@ -257,7 +255,7 @@ var drawTick = function(barId, xBasePos, yBasePos, tickText, drawParms)
       .attr("x", xBasePos)
       .attr("y", yBasePos)
       .attr("text-anchor", "middle")
-      .attr("alignment-baseline", "middle")
+      .attr("alignment-baseline", "alphabetic")
       .attr("font-size", drawParms.intervalLabelFontSize)
       .text(tickText);
   }
@@ -268,7 +266,7 @@ var drawEvent = function(groupIdx, barIdx, eventIdx, eventObj,
 {
   let barId = "group"+groupIdx+"bar"+barIdx;
   let eventId = barId+"event"+eventIdx;
-  console.log("Drawing " + eventId);
+  console.info("Drawing " + eventId);
 
   var scalingFactor = drawParms.barLength / maxTime;
 
